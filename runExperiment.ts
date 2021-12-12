@@ -1,47 +1,38 @@
 import { closeDb, connectToDb, createDatabase, dropDatabase, initializeTables, populateDatabase } from './db';
 import { parseQueryTime, queryUsingDbJoin, queryUsingInAppJoin } from './query';
 import { writeFileSync } from 'fs';
+import { timeit } from './timing';
 
 type TestScenarioResult = {
   method: 'in_app' | 'db',
   numUsers: number,
   numPosts: number,
-  repetitions: {
-    results: { planningTime: number, executionTime: number }[]
-  }[]
+  timeMs: number
 }
 
 export async function testScenario(db, numPosts, numUsers, numRepetitions): Promise<TestScenarioResult[]> {
   await populateDatabase(db, numPosts, numUsers);
 
-  let dbJoinReps: { planningTime: number, executionTime: number }[] = [];
+  let dbJoinReps: number[] = [];
   for (const _ of [...Array(numRepetitions)].keys()) {
-    const dbJoinResult = await queryUsingDbJoin(db);
-    dbJoinReps.push(parseQueryTime(dbJoinResult));
+    const queryTime = await timeit(async () => queryUsingDbJoin(db));
+    dbJoinReps.push(queryTime);
   };
 
-  let inAppJoinReps: {planningTime: number, executionTime: number}[][] = [];
+  let inAppJoinReps: number[] = [];
   for (const _ of [...Array(numRepetitions)].keys()) {
-    const inAppJoinResults = await queryUsingInAppJoin(db);
-    inAppJoinReps.push(inAppJoinResults.map((result) => parseQueryTime(result)));
+    const functionTime = await timeit(async () => queryUsingInAppJoin(db));
+    inAppJoinReps.push(functionTime);
   };
 
-  return [
-    {
-      method: 'db',
-      numPosts: numPosts,
-      numUsers: numUsers,
-      repetitions: dbJoinReps.map(rep => ({
-        results: [rep]
-      }))
-    },
-    {
-      method: 'in_app',
-      numPosts: numPosts,
-      numUsers: numUsers,
-      repetitions: inAppJoinReps.map(rep => ({ results: rep }))
-    }
-  ]
+  const dbJoinData: TestScenarioResult[] = dbJoinReps.map(rep => (
+    { method: 'db', numPosts: numPosts, numUsers: numUsers, timeMs: rep }
+  ));
+  const inAppJoinData: TestScenarioResult[] = inAppJoinReps.map(rep => (
+    { method: 'in_app', numPosts: numPosts, numUsers: numUsers, timeMs: rep }
+  ));
+
+  return dbJoinData.concat(inAppJoinData);
 }
 
 
@@ -72,15 +63,26 @@ export async function runPostsExperiment() {
     scenarioResults = scenarioResults.concat(results);
   };
 
+  console.log(JSON.stringify(scenarioResults));
   writeFileSync('postsOutputs.json', JSON.stringify(scenarioResults));
 }
 
 export async function runNumJoinsExperiment() {
   let scenarios = [
     { numPosts: 1000, numUsers: 10000 },
+    { numPosts: 2000, numUsers: 10000 },
+    { numPosts: 3000, numUsers: 10000 },
+    { numPosts: 4000, numUsers: 10000 },
+    { numPosts: 5000, numUsers: 10000 },
+    { numPosts: 6000, numUsers: 10000 },
+    { numPosts: 7000, numUsers: 10000 },
+    { numPosts: 8000, numUsers: 10000 },
+    { numPosts: 9000, numUsers: 10000 },
     { numPosts: 10000, numUsers: 10000 },
-    { numPosts: 100000, numUsers: 10000 },
-    { numPosts: 1000000, numUsers: 10000 },
+    { numPosts: 20000, numUsers: 10000 },
+    { numPosts: 30000, numUsers: 10000 },
+    { numPosts: 40000, numUsers: 10000 },
+    { numPosts: 50000, numUsers: 10000 },
   ];
 
   let scenarioResults: TestScenarioResult[] = [];

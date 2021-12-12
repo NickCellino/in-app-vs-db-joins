@@ -10,23 +10,34 @@ async function getQueryPerformance(db: Knex, query: Knex.QueryBuilder): Promise<
   return extractQueryPlan(result);
 }
 
-export async function queryUsingDbJoin(db: Knex): Promise<string> {
-  const query = db.select(['post.id', 'user.id']).from('post').leftJoin('user', 'post.authorId', 'user.id');
-  const result = await getQueryPerformance(db, query);
-  return result;
+export async function queryUsingDbJoin(db: Knex): Promise<any> {
+  const query = db.select(['post.id as postId', 'user.name as authorName']).from('post').leftJoin('user', 'post.authorId', 'user.id');
+  console.log(query.toString())
+  const results = await query;
+  console.log(results.slice(0, 10));
+  return results;
 }
 
 export async function queryUsingInAppJoin(db: Knex) {
-  const query1 = db.select(['post.id', 'post.authorId']).from('post');
-  const result1 = await getQueryPerformance(db, query1);
+  const posts = await db.select(['post.id', 'post.authorId']).from('post');
 
-  const posts = await query1;
   const authorIds = posts.map((post) => post.authorId);
 
-  const query2 = db.select(['user.id']).from('user').whereIn('id', authorIds);
-  const result2 = await getQueryPerformance(db, query2);
+  const authors = await db.select(['user.id', 'user.name']).from('user').whereIn('id', authorIds);
 
-  return [result1, result2];
+  const authorsMap = {};
+  authors.forEach((author) => {
+    authorsMap[author.id] = author;
+  });
+
+  const results = posts.map((post) => {
+    return {
+      'postId': post.id,
+      'authorName': authorsMap[post.authorId].name
+    }
+  });
+  console.log(results.slice(0, 10));
+  return results;
 }
 
 export function parseQueryTime(explainAnalyzeOutput: string): { planningTime: number, executionTime: number } {
