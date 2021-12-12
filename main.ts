@@ -1,22 +1,10 @@
 import { program } from 'commander';
 
-import { closeDb, connectToDb, createDatabase, dropDatabase, initializeTables, populateDatabase } from "./db";
-import { runPostsExperiment } from './runExperiment';
+import { runNumJoinsExperiment, runPostsExperiment } from './runExperiment';
 
-program.option('-d --drop-db', 'Drop the existing database before running the test.')
-program.parse()
-
-async function main(options) {
-  let db = connectToDb(true);
-  if (options.dropDb) {
-    let dbServer = connectToDb(false);
-    await dropDatabase(dbServer);
-    await createDatabase(dbServer);
-    await closeDb(dbServer);
-    await initializeTables(db);
-  }
+async function main() {
   await runPostsExperiment();
-  await closeDb(db);
+  await runNumJoinsExperiment();
 }
 
-main(program.opts());
+main()

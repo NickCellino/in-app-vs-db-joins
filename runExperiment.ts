@@ -77,10 +77,10 @@ export async function runPostsExperiment() {
 
 export async function runNumJoinsExperiment() {
   let scenarios = [
-    // { numPosts: 1000, numUsers: 10000 },
-    // { numPosts: 10000, numUsers: 10000 },
+    { numPosts: 1000, numUsers: 10000 },
+    { numPosts: 10000, numUsers: 10000 },
     { numPosts: 100000, numUsers: 10000 },
-    // { numPosts: 1000000, numUsers: 10000 },
+    { numPosts: 1000000, numUsers: 10000 },
   ];
 
   let scenarioResults: TestScenarioResult[] = [];
@@ -95,7 +95,7 @@ export async function runNumJoinsExperiment() {
     console.log('database has been initialized for scenario: ', scenario);
 
     let results = await testScenario(db, scenario.numPosts, scenario.numUsers, 3);
-    console.log(results);
+    console.log('finished gathering results for scenario: ', scenario);
 
     await closeDb(db);
     await closeDb(dbServer);
