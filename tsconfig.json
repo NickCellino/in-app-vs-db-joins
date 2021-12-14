@@ -1,6 +1,9 @@
 {
   "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
-    "noImplicitAny": false
-  }
+    "noImplicitAny": false,
+    "downlevelIteration": true,
+    "outDir": "dist",
+  },
+  "files": ["main.ts"]
 }

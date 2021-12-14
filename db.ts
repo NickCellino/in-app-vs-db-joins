@@ -16,20 +16,15 @@ export function connectToDb(openDb: boolean) {
 }
 
 export async function createDatabase(dbServer: Knex) {
-  return dbServer.raw(`CREATE DATABASE ${DATABASE_NAME};`).catch(() => { });
+  console.log('Creating database...');
+  await dbServer.raw(`CREATE DATABASE ${DATABASE_NAME};`);
+  console.log('Database created.');
 }
 
 export async function dropDatabase(dbServer: Knex, ignoreError: boolean = true) {
-  return dbServer.raw(`DROP DATABASE ${DATABASE_NAME};`).then(() => {
-    console.log('succesfully dropped DB')
-  }).catch((err) => {
-    console.log('error dropping DB')
-    if (ignoreError) {
-      return;
-    } else {
-      throw err;
-    }
-  });
+  console.log('Dropping database...');
+  await dbServer.raw(`DROP DATABASE IF EXISTS ${DATABASE_NAME};`);
+  console.log('Database dropped...');
 }
 export async function closeDb(db: Knex) {
   return db.destroy();

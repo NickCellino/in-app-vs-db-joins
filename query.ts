@@ -11,24 +11,28 @@ async function getQueryPerformance(db: Knex, query: Knex.QueryBuilder): Promise<
 }
 
 export async function queryUsingDbJoin(db: Knex): Promise<any> {
-  const query = db.select(['post.id as postId', 'user.name as authorName']).from('post').leftJoin('user', 'post.authorId', 'user.id');
-  console.log(query.toString())
-  const results = await query;
-  console.log(results.slice(0, 10));
+  const results = await db.select(['post.id as postId', 'user.name as authorName']).from('post').leftJoin('user', 'post.authorId', 'user.id');
   return results;
 }
 
 export async function queryUsingInAppJoin(db: Knex) {
   const posts = await db.select(['post.id', 'post.authorId']).from('post');
 
-  const authorIds = posts.map((post) => post.authorId);
-
-  const authors = await db.select(['user.id', 'user.name']).from('user').whereIn('id', authorIds);
+  let authorIds = posts.map((post) => post.authorId);
 
   const authorsMap = {};
-  authors.forEach((author) => {
-    authorsMap[author.id] = author;
-  });
+
+  const batchSize = 5000;
+  while (authorIds.length) {
+    let authorIdsBatch = authorIds.slice(0, batchSize);
+
+    const authors = await db.select(['user.id', 'user.name']).from('user').whereIn('id', authorIdsBatch);
+    authors.forEach((author) => {
+      authorsMap[author.id] = author;
+    });
+
+    authorIds = authorIds.slice(batchSize);
+  }
 
   const results = posts.map((post) => {
     return {
@@ -36,7 +40,6 @@ export async function queryUsingInAppJoin(db: Knex) {
       'authorName': authorsMap[post.authorId].name
     }
   });
-  console.log(results.slice(0, 10));
   return results;
 }
 
